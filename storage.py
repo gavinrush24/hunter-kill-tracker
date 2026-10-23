@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+from maps import is_valid_species
+
 DATA_FILE = Path("data/tracker.json")
 
 
@@ -31,6 +33,8 @@ def get_entry(map_name, species):
 
 def _change_count(map_name, species, field, amount):
     """Add `amount` (can be negative) to a field, never dropping below 0. Returns the new value."""
+    if not is_valid_species(map_name, species):
+        raise ValueError(f"{species} is not a known animal on {map_name}")
     data = load_data()
     map_data = data.setdefault(map_name, {})
     entry = map_data.setdefault(species, {"kills": 0, "diamonds": 0})
@@ -56,4 +60,7 @@ def remove_diamond(map_name, species):
 
 
 if __name__ == "__main__":
-    print(add_kill("Medved Taiga", "Moose"))
+    print(add_kill("Layton Lake District", "Whitetail Deer"))
+    print(add_diamond("Layton Lake District", "Whitetail Deer"))
+    print(get_entry("Layton Lake District", "Whitetail Deer"))
+    print(get_entry("Hirschfelden Hunting Reserve", "Red Deer"))
