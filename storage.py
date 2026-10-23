@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from species import is_valid_species
 
 DATA_FILE = Path("data/kills.json")
 
@@ -21,6 +22,8 @@ def save_counts(counts):
 
 def add_kill(species):
     """Add one kill for a species and return its new total."""
+    if not is_valid_species(species):
+        raise ValueError(f"Unknown species: {species}")
     counts = load_counts()
     counts[species] = counts.get(species, 0) + 1
     save_counts(counts)
