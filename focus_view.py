@@ -48,6 +48,16 @@ class FocusView(ctk.CTkFrame):
 
         self._build_header(center)
         self._build_counters(center)
+
+        # A reminder of the keyboard shortcuts (they are set up in app.py).
+        hint = ctk.CTkLabel(
+            self,
+            text="Esc  back        ↑ ↓  kills        → ←  diamonds",
+            font=ctk.CTkFont(size=13),
+            text_color=MUTED_TEXT,
+        )
+        hint.grid(row=2, column=0, pady=(0, 20))
+
         self._refresh()
 
     def _build_header(self, parent):
@@ -97,15 +107,15 @@ class FocusView(ctk.CTkFrame):
             counters,
             column=0,
             title="Kills",
-            on_minus=lambda: self._change_kills(storage.remove_kill),
-            on_plus=lambda: self._change_kills(storage.add_kill),
+            on_minus=self.remove_kill,
+            on_plus=self.add_kill,
         )
         self.diamonds_label = self._build_counter(
             counters,
             column=1,
             title="Diamonds",
-            on_minus=lambda: self._change_diamonds(storage.remove_diamond),
-            on_plus=lambda: self._change_diamonds(storage.add_diamond),
+            on_minus=self.remove_diamond,
+            on_plus=self.add_diamond,
         )
         self.rate_label = self._build_rate(counters, column=2)
 
@@ -172,6 +182,19 @@ class FocusView(ctk.CTkFrame):
         )
         value.pack(pady=(18, 0))
         return value
+
+    # These four are used by the on-screen buttons and by the keyboard shortcuts in app.py.
+    def add_kill(self):
+        self._change_kills(storage.add_kill)
+
+    def remove_kill(self):
+        self._change_kills(storage.remove_kill)
+
+    def add_diamond(self):
+        self._change_diamonds(storage.add_diamond)
+
+    def remove_diamond(self):
+        self._change_diamonds(storage.remove_diamond)
 
     def _change_kills(self, storage_function):
         self.kills = storage_function(self.map_name, self.species)

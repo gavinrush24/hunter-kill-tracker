@@ -1,5 +1,7 @@
 # Hunter Kill Tracker
 
+# Hunter Kill Tracker
+
 A desktop app for tracking kills and diamond animals in **theHunter: Call of the Wild**, built with Python and CustomTkinter.
 
 <!-- Add a screenshot once you have one: save it as docs/screenshot.png and uncomment the next line -->
@@ -15,9 +17,20 @@ Grinding for diamond animals means hunting the same species over and over. This 
 - **Kill and diamond counters** for each animal, with `+` and `-` buttons.
 - **Diamond rate** shown for every animal as kills per diamond, to two decimal places (for example, 300 kills and 6 diamonds shows `1 every 50.00`).
 - **Focus view.** Click an animal's badge to open a full-window view with a large badge and large counters, built for grinding one animal at a time.
+- **Keyboard shortcuts** in the focus view, so you can count without reaching for the mouse (see below).
 - **Pinning.** Pin the animals you're working on and they move to the top of their reserve's list.
 - **Automatic saving.** Everything is saved to a local file as you go and is there when you reopen the app.
 - **Badge images** for each animal, with a placeholder shown for any animal that doesn't have one.
+
+## Keyboard shortcuts
+
+These work while an animal's focus view is open:
+
+| Key | Action |
+|---|---|
+| `Esc` | Back to the list |
+| `↑` / `↓` | Add / remove a kill |
+| `→` / `←` | Add / remove a diamond |
 
 ## Getting started
 
@@ -51,6 +64,22 @@ py app.py
 python3 -m pip install -r requirements.txt
 python3 app.py
 ```
+
+## Running the tests
+
+The tests use [pytest](https://pytest.org/), which is kept in a separate file so the app itself doesn't depend on it:
+
+```bash
+# Windows
+py -m pip install -r requirements-dev.txt
+py -m pytest
+
+# macOS / Linux
+python3 -m pip install -r requirements-dev.txt
+python3 -m pytest
+```
+
+The tests cover the diamond rate formatting, the map data, and saving and loading. They write to a temporary file, so they never touch your real `data/tracker.json`.
 
 ## Adding badge images
 
@@ -94,16 +123,18 @@ Animal names must match your badge file names (see above). If you notice a missi
 
 ```
 hunter-kill-tracker/
-├── app.py            # main window: reserve sidebar and animal list
-├── animal_row.py     # one row in the list (badge, name, pin, counters, rate)
-├── focus_view.py     # the full-window single-animal view
-├── badges.py         # loads badge images, with caching and a fallback
-├── maps.py           # loads maps.json and answers "which animals are on this map?"
-├── maps.json         # reserve and animal data
-├── stats.py          # diamond rate calculation and formatting
-├── storage.py        # saving and loading counts and pins (JSON)
-├── theme.py          # shared colors
-└── requirements.txt
+├── app.py                # main window: reserve sidebar, animal list, keyboard shortcuts
+├── animal_row.py         # one row in the list (badge, name, pin, counters, rate)
+├── focus_view.py         # the full-window single-animal view
+├── badges.py             # loads badge images, with caching and a fallback
+├── maps.py               # loads maps.json and answers "which animals are on this map?"
+├── maps.json             # reserve and animal data
+├── stats.py              # diamond rate calculation and formatting
+├── storage.py            # saving and loading counts and pins (JSON)
+├── theme.py              # shared colors
+├── tests/                # pytest tests for stats, maps, and storage
+├── requirements.txt      # what the app needs
+└── requirements-dev.txt  # what the tests need
 ```
 
 The code is split so that each file has one job. The data and logic (`storage.py`, `maps.py`, `stats.py`) don't know anything about the window, and the window files only talk to them through a handful of functions.
@@ -113,13 +144,14 @@ The code is split so that each file has one job. The data and logic (`storage.py
 - [Python](https://www.python.org/)
 - [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) for the interface
 - [Pillow](https://python-pillow.org/) for loading badge images
+- [pytest](https://pytest.org/) for testing
 
 ## Roadmap
 
 - [ ] Add the remaining reserves
-- [ ] Keyboard shortcuts (for example, leaving the focus view with Escape)
+- [x] Keyboard shortcuts (for example, leaving the focus view with Escape)
 - [ ] Session totals alongside all-time totals
-- [ ] Tests for the storage and rate logic
+- [x] Tests for the storage and rate logic
 - [ ] Packaged Windows `.exe` so Python isn't required
 - [ ] add reset kill counter
 - [ ] add a place to store great ones with kills and diamond counts after resetting
