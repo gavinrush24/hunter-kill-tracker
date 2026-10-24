@@ -70,6 +70,17 @@ def toggle_pin(map_name, species):
     save_data(data)
     return entry["pinned"]
 
+def reset_animal(map_name, species):
+    """Set an animal's kills and diamonds back to zero. Its pinned state is kept."""
+    if not is_valid_species(map_name, species):
+        raise ValueError(f"{species} is not a known animal on {map_name}")
+    data = load_data()
+    map_data = data.setdefault(map_name, {})
+    entry = map_data.setdefault(species, {"kills": 0, "diamonds": 0})
+    entry["kills"] = 0
+    entry["diamonds"] = 0
+    save_data(data)
+
 if __name__ == "__main__":
     print(add_kill("Layton Lake District", "Whitetail Deer"))
     print(add_diamond("Layton Lake District", "Whitetail Deer"))

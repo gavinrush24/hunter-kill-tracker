@@ -1,4 +1,5 @@
 import customtkinter as ctk
+from tkinter import messagebox
 
 import storage
 from badges import get_badge_image
@@ -48,6 +49,18 @@ class FocusView(ctk.CTkFrame):
 
         self._build_header(center)
         self._build_counters(center)
+
+        reset_button = ctk.CTkButton(
+        center,
+        text="Reset animal",
+        width=140,
+        height=36,
+        fg_color=NEUTRAL_BUTTON,
+        hover_color=NEUTRAL_BUTTON_HOVER,
+        text_color=BUTTON_TEXT,
+        command=self.confirm_reset,
+        )
+        reset_button.grid(row=4, column=0, pady=(24, 0))
 
         # A reminder of the keyboard shortcuts (they are set up in app.py).
         hint = ctk.CTkLabel(
@@ -195,6 +208,18 @@ class FocusView(ctk.CTkFrame):
 
     def remove_diamond(self):
         self._change_diamonds(storage.remove_diamond)
+
+    def confirm_reset(self):
+        """Ask first, then reset this animal's kills and diamonds to zero."""
+        answer = messagebox.askyesno(
+            "Reset animal",
+            f"Reset {self.species} to 0 kills and 0 diamonds?\n\nThis can't be undone.",
+        )
+        if answer:
+            storage.reset_animal(self.map_name, self.species)
+            self.kills = 0
+            self.diamonds = 0
+            self._refresh()
 
     def _change_kills(self, storage_function):
         self.kills = storage_function(self.map_name, self.species)

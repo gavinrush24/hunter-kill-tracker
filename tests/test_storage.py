@@ -74,3 +74,14 @@ def test_toggle_pin_switches_on_and_off():
     assert storage.get_entry("Layton Lake District", "Moose")["pinned"] is True
     assert storage.toggle_pin("Layton Lake District", "Moose") is False
     assert storage.get_entry("Layton Lake District", "Moose")["pinned"] is False
+
+def test_reset_sets_kills_and_diamonds_to_zero_and_keeps_pin():
+    storage.add_kill("Layton Lake District", "Moose")
+    storage.add_diamond("Layton Lake District", "Moose")
+    storage.toggle_pin("Layton Lake District", "Moose")
+    storage.reset_animal("Layton Lake District", "Moose")
+    assert storage.get_entry("Layton Lake District", "Moose") == {
+        "kills": 0,
+        "diamonds": 0,
+        "pinned": True,
+    }
