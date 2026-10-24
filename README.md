@@ -88,7 +88,7 @@ All reserve and animal data lives in [`maps.json`](maps.json). It maps each rese
 
 Animal names must match your badge file names (see above). If you notice a missing animal or a wrong name, a fix to `maps.json` is a great first contribution.
 
-**Current coverage:** Hirschfelden Hunting Reserve and Layton Lake District. More reserves are being added.
+**Current coverage:** All of the reserves as of patch 9.3
 
 ## Project structure
 
@@ -121,6 +121,8 @@ The code is split so that each file has one job. The data and logic (`storage.py
 - [ ] Session totals alongside all-time totals
 - [ ] Tests for the storage and rate logic
 - [ ] Packaged Windows `.exe` so Python isn't required
+- [ ] add reset kill counter
+- [ ] add a place to store great ones with kills and diamond counts after resetting
 
 ## Disclaimer
 
