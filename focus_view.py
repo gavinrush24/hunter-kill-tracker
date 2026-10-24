@@ -1,6 +1,7 @@
 import customtkinter as ctk
 
 import storage
+from badges import get_badge_image
 from stats import diamond_rate_text
 from theme import (
     ORANGE,
@@ -65,10 +66,15 @@ class FocusView(ctk.CTkFrame):
         badge.grid_rowconfigure(0, weight=1)
         badge.grid_columnconfigure(0, weight=1)
 
-        letter = ctk.CTkLabel(
-            badge, text=self.species[0], font=ctk.CTkFont(size=90, weight="bold")
-        )
-        letter.grid(row=0, column=0)
+        image = get_badge_image(self.species, BIG_BADGE_SIZE)
+        if image is not None:
+            badge.configure(border_width=0, fg_color="transparent")
+            label = ctk.CTkLabel(badge, text="", image=image)
+        else:
+            label = ctk.CTkLabel(
+                badge, text=self.species[0], font=ctk.CTkFont(size=90, weight="bold")
+            )
+        label.grid(row=0, column=0)
 
         name = ctk.CTkLabel(
             parent, text=self.species, font=ctk.CTkFont(size=34, weight="bold")

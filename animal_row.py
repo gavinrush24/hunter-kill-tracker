@@ -1,6 +1,7 @@
 import customtkinter as ctk
 
 import storage
+from badges import get_badge_image
 from stats import diamond_rate_text
 from theme import (
     ORANGE,
@@ -73,13 +74,19 @@ class AnimalRow(ctk.CTkFrame):
         badge.grid_rowconfigure(0, weight=1)
         badge.grid_columnconfigure(0, weight=1)
 
-        letter = ctk.CTkLabel(
-            badge, text=self.species[0], font=ctk.CTkFont(size=26, weight="bold")
-        )
-        letter.grid(row=0, column=0)
+        image = get_badge_image(self.species, BADGE_SIZE)
+        if image is not None:
+            # A real badge: drop the placeholder's orange border and background.
+            badge.configure(border_width=0, fg_color="transparent")
+            label = ctk.CTkLabel(badge, text="", image=image)
+        else:
+            label = ctk.CTkLabel(
+                badge, text=self.species[0], font=ctk.CTkFont(size=26, weight="bold")
+            )
+        label.grid(row=0, column=0)
 
         # Clicking the badge (or the letter on top of it) opens the focus view.
-        for widget in (badge, letter):
+        for widget in (badge, label):
             widget.bind("<Button-1>", lambda event: self.on_open(self.species))
             widget.configure(cursor="hand2")
 
