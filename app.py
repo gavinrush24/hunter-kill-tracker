@@ -1,5 +1,6 @@
 import customtkinter as ctk
 
+import storage
 from animal_row import AnimalRow
 from focus_view import FocusView
 from maps import get_map_names, get_species_for_map
@@ -98,12 +99,24 @@ class KillTrackerApp(ctk.CTk):
             widget.destroy()
         self.rows = {}
 
-        for row, species in enumerate(get_species_for_map(map_name)):
-            animal_row = AnimalRow(
-                self.animal_list, map_name, species, on_open=self.open_focus
+        for species in get_species_for_map(map_name):
+            self.rows[species] = AnimalRow(
+                self.animal_list,
+                map_name,
+                species,
+                on_open=self.open_focus,
+                on_pin_change=self.arrange_rows,
             )
-            animal_row.grid(row=row, column=0, sticky="ew")
-            self.rows[species] = animal_row
+        self.arrange_rows()
+
+    def arrange_rows(self):
+        """Place the rows in order: pinned animals first, the rest in their usual order."""
+        species_in_order = sorted(
+            self.rows,
+            key=lambda species: not storage.get_entry(self.selected_map, species)["pinned"],
+        )
+        for position, species in enumerate(species_in_order):
+            self.rows[species].grid(row=position, column=0, sticky="ew")
 
     def open_focus(self, species):
         """Hide the sidebar and list, and show one animal full-window."""

@@ -18,17 +18,19 @@ BADGE_SIZE = 64
 
 
 class AnimalRow(ctk.CTkFrame):
-    """One animal's row: badge, name, kills counter, diamonds counter, diamond rate."""
+    """One animal's row: badge, name, pin, kills counter, diamonds counter, diamond rate."""
 
-    def __init__(self, parent, map_name, species, on_open):
+    def __init__(self, parent, map_name, species, on_open, on_pin_change):
         super().__init__(parent, height=ROW_HEIGHT, fg_color="transparent")
         self.map_name = map_name
         self.species = species
         self.on_open = on_open  # called with the species name when the badge is clicked
+        self.on_pin_change = on_pin_change  # called (no arguments) after the pin is toggled
 
         entry = storage.get_entry(map_name, species)
         self.kills = entry["kills"]
         self.diamonds = entry["diamonds"]
+        self.pinned = entry["pinned"]
 
         # Keep the row at a fixed height instead of shrinking to fit its contents.
         self.grid_propagate(False)
@@ -58,8 +60,6 @@ class AnimalRow(ctk.CTkFrame):
         self._refresh()
 
     def _build_badge(self):
-        # A placeholder for now: an orange-bordered square with the animal's first letter.
-        # Later this is where the badge image goes.
         badge = ctk.CTkFrame(
             self,
             width=BADGE_SIZE,
@@ -85,19 +85,35 @@ class AnimalRow(ctk.CTkFrame):
             )
         label.grid(row=0, column=0)
 
-        # Clicking the badge (or the letter on top of it) opens the focus view.
+        # Clicking the badge (or the image/letter on top of it) opens the focus view.
         for widget in (badge, label):
             widget.bind("<Button-1>", lambda event: self.on_open(self.species))
             widget.configure(cursor="hand2")
 
     def _build_name(self):
+        frame = ctk.CTkFrame(self, fg_color="transparent")
+        frame.grid(row=0, column=1, sticky="w", padx=(0, 12))
+
         name = ctk.CTkLabel(
-            self,
+            frame,
             text=self.species,
             anchor="w",
             font=ctk.CTkFont(size=18, weight="bold"),
         )
-        name.grid(row=0, column=1, sticky="w", padx=(0, 12))
+        name.grid(row=0, column=0)
+
+        # The star's look (filled or empty) is set in _refresh.
+        self.pin_button = ctk.CTkButton(
+            frame,
+            text="",
+            width=32,
+            height=32,
+            fg_color="transparent",
+            hover_color=NEUTRAL_BUTTON,
+            font=ctk.CTkFont(family="Segoe UI Symbol", size=20),
+            command=self._toggle_pin,
+        )
+        self.pin_button.grid(row=0, column=1, padx=(8, 0))
 
     def _build_counter(self, column, title, on_minus, on_plus):
         """Build a titled counter with - and + buttons. Returns the label showing the number."""
@@ -164,6 +180,11 @@ class AnimalRow(ctk.CTkFrame):
         self.diamonds = storage_function(self.map_name, self.species)
         self._refresh()
 
+    def _toggle_pin(self):
+        self.pinned = storage.toggle_pin(self.map_name, self.species)
+        self._refresh()
+        self.on_pin_change()
+
     def reload(self):
         """Re-read this animal's numbers from storage (used after editing in the focus view)."""
         entry = storage.get_entry(self.map_name, self.species)
@@ -176,3 +197,7 @@ class AnimalRow(ctk.CTkFrame):
         self.kills_label.configure(text=str(self.kills))
         self.diamonds_label.configure(text=str(self.diamonds))
         self.rate_label.configure(text=diamond_rate_text(self.kills, self.diamonds))
+        if self.pinned:
+            self.pin_button.configure(text="★", text_color=ORANGE)
+        else:
+            self.pin_button.configure(text="☆", text_color=MUTED_TEXT)
