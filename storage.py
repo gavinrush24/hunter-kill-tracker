@@ -1,9 +1,9 @@
 import json
-from pathlib import Path
 
 from maps import is_valid_species
+from paths import app_folder
 
-DATA_FILE = Path("data/tracker.json")
+DATA_FILE = app_folder() / "data" / "tracker.json"
 
 # Kills and diamonds logged since the app was opened, keyed by (map, species).
 # This lives in memory only, so it starts empty every time the app runs.

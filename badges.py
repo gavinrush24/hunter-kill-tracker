@@ -1,9 +1,8 @@
-from pathlib import Path
-
 import customtkinter as ctk
 from PIL import Image
+from paths import app_folder
 
-BADGES_FOLDER = Path(__file__).parent / "badges"
+BADGES_FOLDER = app_folder() / "badges"
 
 # Loaded images are kept here so each one is only read from disk once.
 _cache = {}
