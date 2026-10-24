@@ -132,6 +132,11 @@ class FocusView(ctk.CTkFrame):
         )
         self.rate_label = self._build_rate(counters, column=2)
 
+        self.session_label = ctk.CTkLabel(
+            counters, text="", font=ctk.CTkFont(size=16), text_color=MUTED_TEXT
+        )
+        self.session_label.grid(row=1, column=0, columnspan=3, pady=(16, 0))
+
     def _build_counter(self, parent, column, title, on_minus, on_plus):
         """Build a big titled counter with - and + buttons. Returns the number label."""
         frame = ctk.CTkFrame(parent, fg_color="transparent")
@@ -234,3 +239,7 @@ class FocusView(ctk.CTkFrame):
         self.kills_label.configure(text=str(self.kills))
         self.diamonds_label.configure(text=str(self.diamonds))
         self.rate_label.configure(text=diamond_rate_text(self.kills, self.diamonds))
+        session = storage.get_session(self.map_name, self.species)
+        self.session_label.configure(
+            text=f"This session:  {session['kills']} kills   ·   {session['diamonds']} diamonds"
+        )

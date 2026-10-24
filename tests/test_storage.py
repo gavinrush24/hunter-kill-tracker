@@ -9,6 +9,7 @@ def data_file(tmp_path, monkeypatch):
     # is never touched. pytest deletes tmp_path after the run.
     path = tmp_path / "tracker.json"
     monkeypatch.setattr(storage, "DATA_FILE", path)
+    monkeypatch.setattr(storage, "_session", {})
     return path
 
 
@@ -84,4 +85,50 @@ def test_reset_sets_kills_and_diamonds_to_zero_and_keeps_pin():
         "kills": 0,
         "diamonds": 0,
         "pinned": True,
+    }
+
+def test_session_starts_at_zero():
+    assert storage.get_session("Layton Lake District", "Moose") == {
+        "kills": 0,
+        "diamonds": 0,
+    }
+
+
+def test_session_counts_kills_and_diamonds_logged():
+    storage.add_kill("Layton Lake District", "Moose")
+    storage.add_kill("Layton Lake District", "Moose")
+    storage.add_diamond("Layton Lake District", "Moose")
+    assert storage.get_session("Layton Lake District", "Moose") == {
+        "kills": 2,
+        "diamonds": 1,
+    }
+
+
+def test_removing_a_kill_lowers_the_session_count():
+    storage.add_kill("Layton Lake District", "Moose")
+    storage.add_kill("Layton Lake District", "Moose")
+    storage.remove_kill("Layton Lake District", "Moose")
+    assert storage.get_session("Layton Lake District", "Moose")["kills"] == 1
+
+
+def test_session_never_goes_below_zero_for_kills_from_before_the_session():
+    storage.add_kill("Layton Lake District", "Moose")
+    storage.add_kill("Layton Lake District", "Moose")
+    storage._session.clear()  # pretend the app was just reopened
+    storage.remove_kill("Layton Lake District", "Moose")
+    assert storage.get_session("Layton Lake District", "Moose")["kills"] == 0
+    assert storage.get_entry("Layton Lake District", "Moose")["kills"] == 1
+
+
+def test_session_is_tracked_per_animal():
+    storage.add_kill("Layton Lake District", "Moose")
+    assert storage.get_session("Layton Lake District", "Coyote")["kills"] == 0
+
+
+def test_reset_clears_the_session_too():
+    storage.add_kill("Layton Lake District", "Moose")
+    storage.reset_animal("Layton Lake District", "Moose")
+    assert storage.get_session("Layton Lake District", "Moose") == {
+        "kills": 0,
+        "diamonds": 0,
     }

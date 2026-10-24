@@ -22,6 +22,7 @@ Grinding for diamond animals means hunting the same species over and over. This 
 - **Automatic saving.** Everything is saved to a local file as you go and is there when you reopen the app.
 - **Badge images** for each animal, with a placeholder shown for any animal that doesn't have one.
 - **Reset** an animal's kills and diamonds from its focus view. You'll be asked to confirm first.
+- **Session totals** in the focus view, showing what you've logged since opening the app next to the all-time counts.
 
 ## Keyboard shortcuts
 
@@ -151,7 +152,7 @@ The code is split so that each file has one job. The data and logic (`storage.py
 
 - [ ] Add the remaining reserves
 - [x] Keyboard shortcuts (for example, leaving the focus view with Escape)
-- [ ] Session totals alongside all-time totals
+- [x] Session totals alongside all-time totals
 - [x] Tests for the storage and rate logic
 - [ ] Packaged Windows `.exe` so Python isn't required
 - [x] add reset kill counter
