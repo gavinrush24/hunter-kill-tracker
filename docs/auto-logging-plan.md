@@ -10,8 +10,10 @@ Scope: **kills only** (diamonds stay manual for now). Map = whichever reserve is
 ## Progress
 - [x] Step 1: settings + event queue (merged in PR #1)
 - [x] Step 2: global F8 hotkey + sidebar switch (merged in PR #2, confirmed working on Windows)
-- [ ] Small follow-up: show a message when F8 is pressed with no focus view open
-- [ ] Phase 2: species matcher + de-dupe (no game needed), then OCR loop (needs screenshots, resolution, Tesseract)
+- [x] Small follow-up: show a message when F8 is pressed with no focus view open
+- [x] Toast with Undo after every auto-logged kill
+- [x] Phase 2: `species_matcher.py` and `harvest_dedupe.py`, with tests (no game needed)
+- [ ] **Next:** Phase 2 OCR loop (`harvest_detector.py`). Blocked on: harvest-screen screenshots in `tests/fixtures/`, your screen resolution, and Tesseract installed
 - [x] Plan saved in the repo at `docs/auto-logging-plan.md`
 
 ## Core design (shared by both phases)
