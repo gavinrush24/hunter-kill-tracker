@@ -69,6 +69,19 @@ python3 -m pip install -r requirements.txt
 python3 app.py
 ```
 
+## Building the Windows .exe
+
+You can package the app as a Windows program that runs without Python installed. [PyInstaller](https://pyinstaller.org/) is in `requirements-dev.txt`:
+
+```powershell
+py -m pip install -r requirements-dev.txt
+py -m PyInstaller --noconfirm --windowed --name HunterKillTracker --add-data "maps.json;." --collect-all customtkinter app.py
+```
+
+This creates the folder `dist\HunterKillTracker\`. Run `HunterKillTracker.exe` from inside it, and keep the whole folder together, because the exe needs the files next to it.
+
+When the app runs as an exe, your `data` folder (counts and settings) and your `badges` folder go **next to the exe**, not in the project folder. Copy `badges\` into `dist\HunterKillTracker\`. To keep your counts, also copy `data\` there.
+
 ## Running the tests
 
 The tests use [pytest](https://pytest.org/), which is kept in a separate file so the app itself doesn't depend on it:
@@ -165,7 +178,7 @@ The code is split so that each file has one job. The data and logic (`storage.py
 - [x] Keyboard shortcuts (for example, leaving the focus view with Escape)
 - [x] Session totals alongside all-time totals
 - [x] Tests for the storage and rate logic
-- [ ] Packaged Windows `.exe` so Python isn't required
+- [x] Packaged Windows `.exe` so Python isn't required
 - [x] add reset kill counter
 - [x] Global hotkey to log kills while in game
 - [x] Undo for kills logged by the hotkey
