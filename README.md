@@ -23,6 +23,7 @@ Grinding for diamond animals means hunting the same species over and over. This 
 - **Badge images** for each animal, with a placeholder shown for any animal that doesn't have one.
 - **Reset** an animal's kills and diamonds from its focus view. You'll be asked to confirm first.
 - **Session totals** in the focus view, showing what you've logged since opening the app next to the all-time counts.
+- **In-game hotkey.** Turn on *Auto-logging* in the sidebar, then press `F8` while playing to log a kill for the animal open in the focus view, without leaving the game.
 
 ## Keyboard shortcuts
 
@@ -33,6 +34,8 @@ These work while an animal's focus view is open:
 | `Esc` | Back to the list |
 | `↑` / `↓` | Add / remove a kill |
 | `→` / `←` | Add / remove a diamond |
+
+With **Auto-logging** switched on, `F8` works from anywhere, including while the game has focus. It logs a kill for the animal open in the focus view (and does nothing if no focus view is open). Holding the key down only counts once. The hotkey can be changed in `data/settings.json`.
 
 ## Getting started
 
@@ -146,6 +149,7 @@ The code is split so that each file has one job. The data and logic (`storage.py
 - [Python](https://www.python.org/)
 - [CustomTkinter](https://github.com/TomSchimansky/CustomTkinter) for the interface
 - [Pillow](https://python-pillow.org/) for loading badge images
+- [pynput](https://github.com/moses-palmer/pynput) for the global in-game hotkey
 - [pytest](https://pytest.org/) for testing
 
 ## Roadmap
@@ -156,6 +160,8 @@ The code is split so that each file has one job. The data and logic (`storage.py
 - [x] Tests for the storage and rate logic
 - [ ] Packaged Windows `.exe` so Python isn't required
 - [x] add reset kill counter
+- [x] Global hotkey to log kills while in game
+- [ ] Detect harvests automatically by reading the harvest screen (OCR)
 - [ ] add a place to store great ones with kills and diamond counts after resetting
 
 ## Disclaimer
