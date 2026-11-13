@@ -1,10 +1,16 @@
+import queue
+
 import customtkinter as ctk
 
 import storage
 from animal_row import AnimalRow
 from focus_view import FocusView
-from maps import get_map_names, get_species_for_map
+from kill_events import resolve_target
+from maps import get_map_names, get_species_for_map, is_valid_species
 from theme import ORANGE
+
+# How often (in milliseconds) the app checks for kills sent by background listeners.
+EVENT_POLL_MS = 100
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("dark-blue")
@@ -27,12 +33,43 @@ class KillTrackerApp(ctk.CTk):
         self.selected_map = None
         self.focus_view = None
 
+        # Background listeners (hotkey, OCR) put KillEvents here; only the
+        # main thread reads it, in _process_events. See kill_events.py for why.
+        self.events = queue.Queue()
+
         self._build_sidebar()
         self._build_content()
         self._bind_shortcuts()
 
         # Start on the first map in maps.json
         self.select_map(get_map_names()[0])
+
+        self.after(EVENT_POLL_MS, self._process_events)
+
+    def _process_events(self):
+        """Apply every KillEvent waiting in the queue, then check again shortly."""
+        while True:
+            try:
+                event = self.events.get_nowait()
+            except queue.Empty:
+                break
+            self._apply_kill_event(event)
+        self.after(EVENT_POLL_MS, self._process_events)
+
+    def _apply_kill_event(self, event):
+        """Add one kill for the animal an event points at, and update the screen."""
+        focused = self.focus_view.species if self.focus_view is not None else None
+        target = resolve_target(event, self.selected_map, focused)
+        if target is None:
+            return
+        map_name, species = target
+        if not is_valid_species(map_name, species):
+            return
+        storage.add_kill(map_name, species)
+        if self.focus_view is not None and self.focus_view.species == species:
+            self.focus_view.reload()
+        elif species in self.rows:
+            self.rows[species].reload()
 
     def _bind_shortcuts(self):
         """Set up the keyboard shortcuts. They only do something while the focus view is open."""
