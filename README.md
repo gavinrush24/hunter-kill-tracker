@@ -1,7 +1,5 @@
 # Hunter Kill Tracker
 
-# Hunter Kill Tracker
-
 A desktop app for tracking kills and diamond animals in **theHunter: Call of the Wild**, built with Python and CustomTkinter.
 
 <!-- Add a screenshot once you have one: save it as docs/screenshot.png and uncomment the next line -->
@@ -24,6 +22,7 @@ Grinding for diamond animals means hunting the same species over and over. This 
 - **Reset** an animal's kills and diamonds from its focus view. You'll be asked to confirm first.
 - **Session totals** in the focus view, showing what you've logged since opening the app next to the all-time counts.
 - **In-game hotkey.** Turn on *Auto-logging* in the sidebar, then press `F8` while playing to log a kill for the animal open in the focus view, without leaving the game.
+- **Undo for auto-logged kills.** Every kill logged by the hotkey shows a short "Logged Moose (hotkey)" message with an **Undo** button, in case you pressed it by mistake.
 
 ## Keyboard shortcuts
 
@@ -35,7 +34,7 @@ These work while an animal's focus view is open:
 | `↑` / `↓` | Add / remove a kill |
 | `→` / `←` | Add / remove a diamond |
 
-With **Auto-logging** switched on, `F8` works from anywhere, including while the game has focus. It logs a kill for the animal open in the focus view (and does nothing if no focus view is open). Holding the key down only counts once. The hotkey can be changed in `data/settings.json`.
+With **Auto-logging** switched on, `F8` works from anywhere, including while the game has focus. It logs a kill for the animal open in the focus view. If no focus view is open, nothing is logged and the app shows a reminder to open an animal first. Holding the key down only counts once, and each logged kill can be undone from the message at the bottom of the window for 5 seconds. The hotkey can be changed in `data/settings.json`.
 
 ## Getting started
 
@@ -70,6 +69,19 @@ python3 -m pip install -r requirements.txt
 python3 app.py
 ```
 
+## Building the Windows .exe
+
+You can package the app as a Windows program that runs without Python installed. [PyInstaller](https://pyinstaller.org/) is in `requirements-dev.txt`:
+
+```powershell
+py -m pip install -r requirements-dev.txt
+py -m PyInstaller --noconfirm --windowed --name HunterKillTracker --add-data "maps.json;." --collect-all customtkinter app.py
+```
+
+This creates the folder `dist\HunterKillTracker\`. Run `HunterKillTracker.exe` from inside it, and keep the whole folder together, because the exe needs the files next to it.
+
+When the app runs as an exe, your `data` folder (counts and settings) and your `badges` folder go **next to the exe**, not in the project folder. Copy `badges\` into `dist\HunterKillTracker\`. To keep your counts, also copy `data\` there.
+
 ## Running the tests
 
 The tests use [pytest](https://pytest.org/), which is kept in a separate file so the app itself doesn't depend on it:
@@ -84,7 +96,7 @@ python3 -m pip install -r requirements-dev.txt
 python3 -m pytest
 ```
 
-The tests cover the diamond rate formatting, the map data, and saving and loading. They write to a temporary file, so they never touch your real `data/tracker.json`.
+The tests cover the diamond rate formatting, the map data, saving and loading, settings, the hotkey, and the auto-logging logic (matching harvest-screen text to an animal, and making sure one harvest only counts once). They write to temporary files, so they never touch your real `data/tracker.json`.
 
 ## Adding badge images
 
@@ -128,7 +140,7 @@ Animal names must match your badge file names (see above). If you notice a missi
 
 ```
 hunter-kill-tracker/
-├── app.py                # main window: reserve sidebar, animal list, keyboard shortcuts
+├── app.py                # main window: reserve sidebar, animal list, shortcuts, Undo message
 ├── animal_row.py         # one row in the list (badge, name, pin, counters, rate)
 ├── focus_view.py         # the full-window single-animal view
 ├── badges.py             # loads badge images, with caching and a fallback
@@ -136,11 +148,19 @@ hunter-kill-tracker/
 ├── maps.json             # reserve and animal data
 ├── stats.py              # diamond rate calculation and formatting
 ├── storage.py            # saving and loading counts and pins (JSON)
+├── settings.py           # saving and loading settings (hotkey, auto-logging on/off)
 ├── theme.py              # shared colors
-├── tests/                # pytest tests for stats, maps, and storage
+├── hotkey_listener.py    # the global in-game hotkey
+├── kill_events.py        # messages background listeners send to the app
+├── species_matcher.py    # turns harvest-screen text into an animal on the current map
+├── harvest_dedupe.py     # makes sure one harvest screen counts as one kill
+├── docs/                 # plans for upcoming features
+├── tests/                # pytest tests
 ├── requirements.txt      # what the app needs
 └── requirements-dev.txt  # what the tests need
 ```
+
+`species_matcher.py` and `harvest_dedupe.py` are the first pieces of automatic harvest detection (see the roadmap). They aren't connected to the app yet. The part that reads the screen comes next.
 
 The code is split so that each file has one job. The data and logic (`storage.py`, `maps.py`, `stats.py`) don't know anything about the window, and the window files only talk to them through a handful of functions.
 
@@ -158,10 +178,11 @@ The code is split so that each file has one job. The data and logic (`storage.py
 - [x] Keyboard shortcuts (for example, leaving the focus view with Escape)
 - [x] Session totals alongside all-time totals
 - [x] Tests for the storage and rate logic
-- [ ] Packaged Windows `.exe` so Python isn't required
+- [x] Packaged Windows `.exe` so Python isn't required
 - [x] add reset kill counter
 - [x] Global hotkey to log kills while in game
-- [ ] Detect harvests automatically by reading the harvest screen (OCR)
+- [x] Undo for kills logged by the hotkey
+- [ ] Detect harvests automatically by reading the harvest screen (OCR). In progress: text matching and duplicate protection are done, screen reading is next
 - [ ] add a place to store great ones with kills and diamond counts after resetting
 
 ## Disclaimer

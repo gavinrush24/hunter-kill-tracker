@@ -9,10 +9,12 @@ from focus_view import FocusView
 from hotkey_listener import HotkeyListener
 from kill_events import KillEvent, resolve_target
 from maps import get_map_names, get_species_for_map, is_valid_species
-from theme import MUTED_TEXT, ORANGE
+from theme import BUTTON_TEXT, MUTED_TEXT, NEUTRAL_BUTTON, NEUTRAL_BUTTON_HOVER, ORANGE
 
 # How often (in milliseconds) the app checks for kills sent by background listeners.
 EVENT_POLL_MS = 100
+# How long (in milliseconds) the "Logged ... / Undo" message stays on screen.
+TOAST_MS = 5000
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("dark-blue")
@@ -48,6 +50,7 @@ class KillTrackerApp(ctk.CTk):
 
         self._build_sidebar()
         self._build_content()
+        self._build_toast()
         self._bind_shortcuts()
 
         # Start on the first map in maps.json
@@ -98,15 +101,78 @@ class KillTrackerApp(ctk.CTk):
         focused = self.focus_view.species if self.focus_view is not None else None
         target = resolve_target(event, self.selected_map, focused)
         if target is None:
+            if event.species is None:
+                # A hotkey press only knows "the animal I'm grinding", so it needs the focus view.
+                self._show_toast(
+                    f"Open an animal first (click its row), then press {self.settings['hotkey'].upper()}"
+                )
             return
         map_name, species = target
         if not is_valid_species(map_name, species):
             return
         storage.add_kill(map_name, species)
+        self._refresh_animal(species)
+        self._show_toast(
+            f"Logged {species} ({event.source})",
+            on_undo=lambda: self._undo_kill(map_name, species),
+        )
+
+    def _undo_kill(self, map_name, species):
+        """Take back a kill that a background listener logged (detection can be wrong)."""
+        storage.remove_kill(map_name, species)
+        self._refresh_animal(species)
+
+    def _refresh_animal(self, species):
+        """Redraw whichever widget is showing this animal's counts."""
         if self.focus_view is not None and self.focus_view.species == species:
             self.focus_view.reload()
         elif species in self.rows:
             self.rows[species].reload()
+
+    def _build_toast(self):
+        """A small message box at the bottom of the window, hidden until _show_toast is called."""
+        self.toast = ctk.CTkFrame(self, corner_radius=8, border_width=2, border_color=ORANGE)
+        self.toast_label = ctk.CTkLabel(self.toast, text="", font=ctk.CTkFont(size=14))
+        self.toast_label.pack(side="left", padx=(14, 10), pady=8)
+        self.toast_undo = ctk.CTkButton(
+            self.toast,
+            text="Undo",
+            width=70,
+            fg_color=NEUTRAL_BUTTON,
+            hover_color=NEUTRAL_BUTTON_HOVER,
+            text_color=BUTTON_TEXT,
+            command=self._click_toast_undo,
+        )
+        self._toast_undo_action = None
+        self._toast_timer = None
+
+    def _show_toast(self, message, on_undo=None):
+        """Show a message for a few seconds, with an Undo button if on_undo is given."""
+        if self._toast_timer is not None:
+            self.after_cancel(self._toast_timer)
+        self.toast_label.configure(text=message)
+        self._toast_undo_action = on_undo
+        if on_undo is not None:
+            self.toast_undo.pack(side="left", padx=(0, 8), pady=8)
+        else:
+            self.toast_undo.pack_forget()
+        # place() floats the toast on top of everything, including the full-window focus view.
+        self.toast.place(relx=0.5, rely=1.0, y=-20, anchor="s")
+        self.toast.lift()
+        self._toast_timer = self.after(TOAST_MS, self._hide_toast)
+
+    def _click_toast_undo(self):
+        action = self._toast_undo_action
+        self._hide_toast()  # hide first, so Undo can only be clicked once
+        if action is not None:
+            action()
+
+    def _hide_toast(self):
+        if self._toast_timer is not None:
+            self.after_cancel(self._toast_timer)
+            self._toast_timer = None
+        self._toast_undo_action = None
+        self.toast.place_forget()
 
     def _bind_shortcuts(self):
         """Set up the keyboard shortcuts. They only do something while the focus view is open."""
@@ -243,6 +309,7 @@ class KillTrackerApp(ctk.CTk):
             self, self.selected_map, species, on_back=self.close_focus
         )
         self.focus_view.grid(row=0, column=0, columnspan=2, sticky="nsew")
+        self.toast.lift()  # the new focus view would otherwise cover a toast that's showing
 
     def close_focus(self):
         """Go back to the list, and update that animal's row with any changes."""
