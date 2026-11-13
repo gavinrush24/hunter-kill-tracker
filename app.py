@@ -2,12 +2,14 @@ import queue
 
 import customtkinter as ctk
 
+import settings
 import storage
 from animal_row import AnimalRow
 from focus_view import FocusView
-from kill_events import resolve_target
+from hotkey_listener import HotkeyListener
+from kill_events import KillEvent, resolve_target
 from maps import get_map_names, get_species_for_map, is_valid_species
-from theme import ORANGE
+from theme import MUTED_TEXT, ORANGE
 
 # How often (in milliseconds) the app checks for kills sent by background listeners.
 EVENT_POLL_MS = 100
@@ -37,6 +39,13 @@ class KillTrackerApp(ctk.CTk):
         # main thread reads it, in _process_events. See kill_events.py for why.
         self.events = queue.Queue()
 
+        self.settings = settings.load_settings()
+        # pynput calls this from its own thread, so it only queues an event.
+        self.hotkey_listener = HotkeyListener(
+            self.settings["hotkey"],
+            on_hotkey=lambda: self.events.put(KillEvent(source="hotkey")),
+        )
+
         self._build_sidebar()
         self._build_content()
         self._bind_shortcuts()
@@ -44,7 +53,35 @@ class KillTrackerApp(ctk.CTk):
         # Start on the first map in maps.json
         self.select_map(get_map_names()[0])
 
+        if self.settings["auto_logging"]:
+            self.auto_logging_switch.select()
+            self._start_hotkey()
+
         self.after(EVENT_POLL_MS, self._process_events)
+
+    def _toggle_auto_logging(self):
+        """Turn the global hotkey on or off, and remember the choice."""
+        on = bool(self.auto_logging_switch.get())
+        if on:
+            on = self._start_hotkey()
+        else:
+            self.hotkey_listener.stop()
+            self.auto_logging_status.configure(text="")
+        self.settings["auto_logging"] = on
+        settings.save_settings(self.settings)
+
+    def _start_hotkey(self):
+        """Start the hotkey listener. Returns False (and turns the switch off) if it can't start."""
+        try:
+            self.hotkey_listener.start()
+        except Exception as error:
+            self.auto_logging_switch.deselect()
+            self.auto_logging_status.configure(text=f"Hotkey unavailable: {error}")
+            return False
+        self.auto_logging_status.configure(
+            text=f"Press {self.settings['hotkey'].upper()} in game to log a kill\nfor the animal in focus view"
+        )
+        return True
 
     def _process_events(self):
         """Apply every KillEvent waiting in the queue, then check again shortly."""
@@ -98,6 +135,25 @@ class KillTrackerApp(ctk.CTk):
             self.sidebar, text="Reserves", font=ctk.CTkFont(size=22, weight="bold")
         )
         title.pack(padx=20, pady=(24, 12), anchor="w")
+
+        # Auto-logging controls sit at the bottom of the sidebar. They're packed
+        # before the map list so the list's expand=True can't push them off screen.
+        self.auto_logging_status = ctk.CTkLabel(
+            self.sidebar,
+            text="",
+            font=ctk.CTkFont(size=12),
+            text_color=MUTED_TEXT,
+            justify="left",
+            wraplength=210,
+        )
+        self.auto_logging_status.pack(side="bottom", padx=20, pady=(0, 16), anchor="w")
+        self.auto_logging_switch = ctk.CTkSwitch(
+            self.sidebar,
+            text=f"Auto-logging ({self.settings['hotkey'].upper()})",
+            progress_color=ORANGE,
+            command=self._toggle_auto_logging,
+        )
+        self.auto_logging_switch.pack(side="bottom", padx=20, pady=(8, 4), anchor="w")
 
         # With 19 reserves the buttons are taller than the window, so they
         # live in a scrollable frame under the fixed "Reserves" title.
