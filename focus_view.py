@@ -234,6 +234,13 @@ class FocusView(ctk.CTkFrame):
         self.diamonds = storage_function(self.map_name, self.species)
         self._refresh()
 
+    def reload(self):
+        """Re-read this animal's numbers from storage (used when a kill is logged from outside the view)."""
+        entry = storage.get_entry(self.map_name, self.species)
+        self.kills = entry["kills"]
+        self.diamonds = entry["diamonds"]
+        self._refresh()
+
     def _refresh(self):
         """Update everything on screen from the view's current numbers."""
         self.kills_label.configure(text=str(self.kills))
