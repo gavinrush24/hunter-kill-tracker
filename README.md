@@ -96,7 +96,7 @@ python3 -m pip install -r requirements-dev.txt
 python3 -m pytest
 ```
 
-The tests cover the diamond rate formatting, the map data, saving and loading, settings, the hotkey, and the auto-logging logic (matching harvest-screen text to an animal, and making sure one harvest only counts once). They write to temporary files, so they never touch your real `data/tracker.json`.
+The tests cover the diamond rate formatting, the map data, saving and loading (including damaged files and saves cut off halfway), settings, badge loading, the hotkey, and the auto-logging logic (matching harvest-screen text to an animal, and making sure one harvest only counts once). They write to temporary files, so they never touch your real `data/tracker.json`.
 
 ## Adding badge images
 
@@ -112,11 +112,15 @@ The badge artwork belongs to the game's developer, so it is **not included in th
 | Roosevelt Elk | `roosevelt-elk.png` |
 | White-tailed Jackrabbit | `white-tailed-jackrabbit.png` |
 
+If a badge file is damaged or isn't really a PNG, that animal just shows its letter placeholder.
+
 The `badges` folder is listed in `.gitignore`, so your images won't be uploaded if you fork or contribute.
 
 ## Where your data is saved
 
 Your counts and pins are stored in `data/tracker.json`, created automatically the first time you log something. It's a plain JSON file, so you can back it up by copying it. The `data` folder is also in `.gitignore`.
+
+Saving is crash-safe: each save goes to a temporary file first and then replaces `tracker.json` in one step, so a crash or power cut mid-save leaves your previous counts intact. If `tracker.json` is ever damaged anyway (for example after a bad hand edit), the app doesn't refuse to open. It keeps a copy as `data/tracker.corrupt-<date-time>.json`, starts with empty counts, and tells you where the copy is so you can recover it. Settings in `data/settings.json` that are missing, damaged or the wrong type (for example `"auto_logging": "false"` in quotes) quietly fall back to their defaults.
 
 ## Adding or fixing animals and reserves
 
