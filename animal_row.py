@@ -1,7 +1,7 @@
 import customtkinter as ctk
 
 import storage
-from badges import get_badge_image
+from badges import BadgeLabel, get_badge_image
 from stats import diamond_rate_text
 from theme import (
     ORANGE,
@@ -78,7 +78,7 @@ class AnimalRow(ctk.CTkFrame):
         if image is not None:
             # A real badge: drop the placeholder's orange border and background.
             badge.configure(border_width=0, fg_color="transparent")
-            label = ctk.CTkLabel(badge, text="", image=image)
+            label = BadgeLabel(badge, text="", image=image)
         else:
             label = ctk.CTkLabel(
                 badge, text=self.species[0], font=ctk.CTkFont(size=26, weight="bold")

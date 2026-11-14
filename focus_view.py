@@ -2,7 +2,7 @@ import customtkinter as ctk
 from tkinter import messagebox
 
 import storage
-from badges import get_badge_image
+from badges import BadgeLabel, get_badge_image
 from stats import diamond_rate_text
 from theme import (
     ORANGE,
@@ -92,7 +92,7 @@ class FocusView(ctk.CTkFrame):
         image = get_badge_image(self.species, BIG_BADGE_SIZE)
         if image is not None:
             badge.configure(border_width=0, fg_color="transparent")
-            label = ctk.CTkLabel(badge, text="", image=image)
+            label = BadgeLabel(badge, text="", image=image)
         else:
             label = ctk.CTkLabel(
                 badge, text=self.species[0], font=ctk.CTkFont(size=90, weight="bold")
