@@ -10,6 +10,7 @@ def data_file(tmp_path, monkeypatch):
     path = tmp_path / "tracker.json"
     monkeypatch.setattr(storage, "DATA_FILE", path)
     monkeypatch.setattr(storage, "_session", {})
+    monkeypatch.setattr(storage, "_recovery_message", None)
     return path
 
 
@@ -132,3 +133,66 @@ def test_reset_clears_the_session_too():
         "kills": 0,
         "diamonds": 0,
     }
+
+# --- Damaged or unreadable files -------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "contents",
+    [b"", b'{"Layt', b"not json at all", b"[]", b"null", b'"text"', b"\xff\xfe\x81"],
+)
+def test_damaged_file_is_kept_aside_and_the_app_starts_empty(data_file, contents):
+    data_file.write_bytes(contents)
+    assert storage.get_entry("Layton Lake District", "Moose")["kills"] == 0
+    backups = list(data_file.parent.glob("tracker.corrupt-*.json"))
+    assert len(backups) == 1
+    assert backups[0].read_bytes() == contents
+    assert not data_file.exists()
+    assert storage.pop_recovery_message() is not None
+    assert storage.pop_recovery_message() is None  # only reported once
+
+
+def test_counting_works_again_after_a_damaged_file(data_file):
+    data_file.write_bytes(b'{"Layt')
+    assert storage.add_kill("Layton Lake District", "Moose") == 1
+    assert storage.get_entry("Layton Lake District", "Moose")["kills"] == 1
+
+
+def test_a_file_that_cant_be_read_raises_instead_of_being_wiped(data_file):
+    # A folder where the file should be: reading it fails like a locked file would.
+    data_file.mkdir()
+    with pytest.raises(OSError):
+        storage.load_data()
+    assert data_file.is_dir()
+
+
+def test_no_recovery_message_for_a_healthy_file():
+    storage.add_kill("Layton Lake District", "Moose")
+    storage.load_data()
+    assert storage.pop_recovery_message() is None
+
+
+# --- Safe saving ------------------------------------------------------------
+
+
+def test_a_save_cut_off_halfway_leaves_the_old_file_intact(data_file, monkeypatch):
+    storage.add_kill("Layton Lake District", "Moose")
+    before = data_file.read_bytes()
+
+    def crash_partway(data, f, **kwargs):
+        f.write('{"Layt')
+        raise KeyboardInterrupt("power cut")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(storage.json, "dump", crash_partway)
+        with pytest.raises(KeyboardInterrupt):
+            storage.add_kill("Layton Lake District", "Moose")
+    assert data_file.read_bytes() == before
+    assert storage.get_entry("Layton Lake District", "Moose")["kills"] == 1
+
+
+def test_non_ascii_names_survive_a_save_and_load(data_file):
+    data_file.write_text('{"Tòrr nan Sithean": {"Red Deer": {"kills": 3}}}', encoding="utf-8")
+    assert storage.get_entry("Tòrr nan Sithean", "Red Deer")["kills"] == 3
+    storage.save_data(storage.load_data())
+    assert storage.get_entry("Tòrr nan Sithean", "Red Deer")["kills"] == 3

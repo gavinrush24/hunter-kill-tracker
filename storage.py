@@ -1,4 +1,6 @@
 import json
+import os
+from datetime import datetime
 
 from maps import is_valid_species
 from paths import app_folder
@@ -9,20 +11,66 @@ DATA_FILE = app_folder() / "data" / "tracker.json"
 # This lives in memory only, so it starts empty every time the app runs.
 _session = {}
 
+# Set when a damaged tracker.json had to be put aside, so the app can tell the user.
+_recovery_message = None
+
 
 def load_data():
-    """Read all saved data from disk. Returns an empty dict if nothing is saved yet."""
+    """Read all saved data from disk. Returns an empty dict if nothing is saved yet.
+
+    If the file is damaged (cut off, not JSON, or not the right shape), a copy of it
+    is kept next to it as tracker.corrupt-<time>.json and the app starts fresh, rather
+    than refusing to open. If the file can't be read at all (for example another program
+    has it locked), the error is raised: treating it as empty would let the next save
+    wipe everyone's counts.
+    """
     if not DATA_FILE.exists():
         return {}
-    with open(DATA_FILE, "r") as f:
-        return json.load(f)
+    raw = DATA_FILE.read_bytes()
+    try:
+        data = json.loads(raw.decode("utf-8"))
+    except ValueError:  # covers bad JSON and bad UTF-8
+        data = None
+    if isinstance(data, dict):
+        return data
+    _set_aside_damaged_file(raw)
+    return {}
+
+
+def _set_aside_damaged_file(raw):
+    """Keep a copy of a damaged data file, then remove it so saving can start fresh."""
+    global _recovery_message
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    backup = DATA_FILE.with_name(f"tracker.corrupt-{stamp}.json")
+    backup.write_bytes(raw)  # if this fails, the error stops us before anything is deleted
+    DATA_FILE.unlink()
+    _recovery_message = (
+        "Your saved counts file was damaged and couldn't be read, so the app started "
+        f"with empty counts.\n\nThe damaged file was kept as:\n{backup}"
+    )
+
+
+def pop_recovery_message():
+    """Return the "your file was damaged" message once (or None), then forget it."""
+    global _recovery_message
+    message, _recovery_message = _recovery_message, None
+    return message
 
 
 def save_data(data):
-    """Write all data to disk."""
+    """Write all data to disk safely.
+
+    The data goes to a temporary file first, which then replaces tracker.json in one
+    step. A crash or power cut mid-save leaves the old file untouched instead of a
+    half-written one.
+    """
     DATA_FILE.parent.mkdir(exist_ok=True)
-    with open(DATA_FILE, "w") as f:
+    temp_file = DATA_FILE.with_name(DATA_FILE.name + ".tmp")
+    with open(temp_file, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(temp_file, DATA_FILE)
 
 
 def get_entry(map_name, species):
