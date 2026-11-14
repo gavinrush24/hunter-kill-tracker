@@ -1,4 +1,6 @@
 import queue
+import tkinter as tk
+from tkinter import messagebox
 
 import customtkinter as ctk
 
@@ -61,6 +63,8 @@ class KillTrackerApp(ctk.CTk):
             self._start_hotkey()
 
         self.after(EVENT_POLL_MS, self._process_events)
+        # Shown once the window is up, if loading the counts found a damaged file.
+        self.after(200, self._show_recovery_message)
 
     def _toggle_auto_logging(self):
         """Turn the global hotkey on or off, and remember the choice."""
@@ -88,13 +92,35 @@ class KillTrackerApp(ctk.CTk):
 
     def _process_events(self):
         """Apply every KillEvent waiting in the queue, then check again shortly."""
-        while True:
-            try:
-                event = self.events.get_nowait()
-            except queue.Empty:
-                break
-            self._apply_kill_event(event)
-        self.after(EVENT_POLL_MS, self._process_events)
+        try:
+            while True:
+                try:
+                    event = self.events.get_nowait()
+                except queue.Empty:
+                    break
+                try:
+                    self._apply_kill_event(event)
+                except Exception as error:
+                    # e.g. tracker.json briefly locked by OneDrive or antivirus.
+                    self._show_toast(f"Couldn't log that kill: {error}")
+        finally:
+            # Always check again, even after an error, so one failed save
+            # doesn't silently switch off auto-logging for the rest of the session.
+            self.after(EVENT_POLL_MS, self._process_events)
+
+    def report_callback_exception(self, exc_type, error, traceback_obj):
+        """Tk calls this when a button or shortcut raises an error.
+
+        The packaged exe has no console, so without this errors would vanish and
+        the screen could quietly stop matching what's saved.
+        """
+        super().report_callback_exception(exc_type, error, traceback_obj)  # still print it
+        self._show_toast(f"Something went wrong: {error}")
+
+    def _show_recovery_message(self):
+        message = storage.pop_recovery_message()
+        if message is not None:
+            messagebox.showwarning("Saved counts were damaged", message, parent=self)
 
     def _apply_kill_event(self, event):
         """Add one kill for the animal an event points at, and update the screen."""
@@ -321,6 +347,22 @@ class KillTrackerApp(ctk.CTk):
         self.rows[species].reload()
 
 
-if __name__ == "__main__":
-    app = KillTrackerApp()
+def main():
+    try:
+        app = KillTrackerApp()
+    except Exception as error:
+        # The packaged exe has no console, so show startup errors in a window
+        # instead of closing without a word.
+        root = tk.Tk()
+        root.withdraw()
+        messagebox.showerror(
+            "Hunter Kill Tracker couldn't start",
+            f"{type(error).__name__}: {error}\n\nYour saved counts have not been changed.",
+        )
+        root.destroy()
+        raise
     app.mainloop()
+
+
+if __name__ == "__main__":
+    main()
