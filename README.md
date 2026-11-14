@@ -164,7 +164,7 @@ hunter-kill-tracker/
 └── requirements-dev.txt  # what the tests need
 ```
 
-`species_matcher.py` and `harvest_dedupe.py` are the first pieces of automatic harvest detection (see the roadmap). They aren't connected to the app yet. The part that reads the screen comes next.
+`species_matcher.py` and `harvest_dedupe.py` are the first pieces of automatic harvest detection (see the roadmap). They aren't connected to the app yet. The part that reads the screen comes next. Both are built to skip a kill rather than log the wrong one: the matcher gives up when the text is too close to two animals (for example Red Deer and Roe Deer) or when a short name like Moose isn't a near-exact match, and a kill only counts once the same animal has been read twice in a row and the previous harvest screen has closed.
 
 The code is split so that each file has one job. The data and logic (`storage.py`, `maps.py`, `stats.py`) don't know anything about the window, and the window files only talk to them through a handful of functions.
 

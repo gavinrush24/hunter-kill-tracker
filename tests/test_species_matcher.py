@@ -48,3 +48,35 @@ def test_garbage_and_empty_text_give_none():
 
 def test_clean_text_keeps_lines_and_strips_symbols():
     assert clean_text("  Black-Bear!! \n\n 84.2 kg ") == "black bear\nb kg"
+
+
+# --- Cases found in the code review ------------------------------------------
+
+REVONTULI = get_species_for_map("Revontuli Coast")  # has Moose and three kinds of goose
+HIRSCHFELDEN = get_species_for_map("Hirschfelden Hunting Reserve")  # Red Deer and Roe Deer
+
+
+def test_goose_is_never_read_as_moose():
+    for text in ["Goose", "Loose", "Mouse", "Greylaq\nGoose", "Snovv\nGoose", "Tundra Bcan\nGoose\nMale\n2.1 kg"]:
+        assert match_species(text, REVONTULI) != "Moose", text
+
+
+def test_a_name_wrapped_onto_two_lines_is_matched():
+    assert match_species("Tundra Bcan\nGoose\nMale\n2.1 kg", REVONTULI) == "Tundra Bean Goose"
+    assert match_species("Greylaq\nGoose", REVONTULI) == "Greylag Goose"
+
+
+def test_text_equally_close_to_two_animals_gives_none():
+    assert match_species("Rod Deer", HIRSCHFELDEN) is None
+
+
+def test_clear_misreads_of_similar_names_still_match():
+    assert match_species("Red Deer", HIRSCHFELDEN) == "Red Deer"
+    assert match_species("Roe Deer", HIRSCHFELDEN) == "Roe Deer"
+    assert match_species("Ring-Neckcd Pheasant", HIRSCHFELDEN) == "Ring-Necked Pheasant"
+
+
+def test_short_names_need_a_near_exact_match():
+    tar_map = get_species_for_map("Sundarpatan")
+    assert match_species("Tar", tar_map) is None
+    assert match_species("Tahr", tar_map) == "Tahr"
