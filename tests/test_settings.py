@@ -44,3 +44,23 @@ def test_loading_does_not_change_the_defaults():
     loaded = settings.load_settings()
     loaded["hotkey"] = "changed"
     assert settings.DEFAULTS["hotkey"] == "f8"
+
+
+def test_values_of_the_wrong_type_fall_back_to_defaults(settings_file):
+    settings_file.write_text(json.dumps({"hotkey": 8, "auto_logging": "false"}))
+    assert settings.load_settings() == settings.DEFAULTS
+
+
+def test_null_values_fall_back_to_defaults(settings_file):
+    settings_file.write_text(json.dumps({"hotkey": None, "auto_logging": None}))
+    assert settings.load_settings() == settings.DEFAULTS
+
+
+def test_a_file_that_isnt_utf8_falls_back_to_defaults(settings_file):
+    settings_file.write_bytes(b'{"hotkey": "\x81"}')
+    assert settings.load_settings() == settings.DEFAULTS
+
+
+def test_non_ascii_text_round_trips(settings_file):
+    settings.save_settings({"hotkey": "é", "auto_logging": False})
+    assert settings.load_settings()["hotkey"] == "é"
