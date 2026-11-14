@@ -21,14 +21,16 @@ def load_settings():
     if not SETTINGS_FILE.exists():
         return settings
     try:
-        with open(SETTINGS_FILE, "r") as f:
+        with open(SETTINGS_FILE, "r", encoding="utf-8") as f:
             saved = json.load(f)
-    except (json.JSONDecodeError, OSError):
+    except (ValueError, OSError):  # ValueError covers bad JSON and bad UTF-8
         return settings
     if isinstance(saved, dict):
         # Only keep keys we know about, so old or misspelled keys are ignored.
-        for key in DEFAULTS:
-            if key in saved:
+        # A value of the wrong type (e.g. "auto_logging": "false", which Python would
+        # treat as on) is also ignored, so a hand-edited file can't crash the app.
+        for key, default in DEFAULTS.items():
+            if key in saved and type(saved[key]) is type(default):
                 settings[key] = saved[key]
     return settings
 
@@ -36,5 +38,5 @@ def load_settings():
 def save_settings(settings):
     """Write settings to disk."""
     SETTINGS_FILE.parent.mkdir(exist_ok=True)
-    with open(SETTINGS_FILE, "w") as f:
+    with open(SETTINGS_FILE, "w", encoding="utf-8") as f:
         json.dump(settings, f, indent=2)
