@@ -13,6 +13,7 @@ Scope: **kills only** (diamonds stay manual for now). Map = whichever reserve is
 - [x] Small follow-up: show a message when F8 is pressed with no focus view open
 - [x] Toast with Undo after every auto-logged kill
 - [x] Phase 2: `species_matcher.py` and `harvest_dedupe.py`, with tests (no game needed)
+- [x] Fixed matcher/de-dupe issues found in code review (Goose→Moose, Red/Roe Deer ties, dropped and double-counted kills)
 - [ ] **Next:** Phase 2 OCR loop (`harvest_detector.py`). Blocked on: harvest-screen screenshots in `tests/fixtures/`, your screen resolution, and Tesseract installed
 - [x] Plan saved in the repo at `docs/auto-logging-plan.md`
 
@@ -30,9 +31,9 @@ Scope: **kills only** (diamonds stay manual for now). Map = whichever reserve is
 
 ## Phase 2 — Harvest screen OCR
 - **Step 0 (research, do first):** take screenshots of the harvest/trophy screen at your resolution for several species. Save a few in `tests/fixtures/`. This tells us exactly where the species name appears. Run the game in **borderless windowed** — fullscreen exclusive can block screen capture.
-- New `species_matcher.py` (pure function, easy to test): clean OCR text, fuzzy-match it to `maps.get_species_for_map(map)` with stdlib `difflib.get_close_matches`, return the species or `None` below a confidence cutoff. Matching only against the current map's list makes this much more reliable.
+- `species_matcher.py` (pure function, easy to test): clean OCR text (look-alike digits fixed), check for an exact name first, then fuzzy-match each line, each pair of neighbouring lines (wrapped names) and the whole text against `maps.get_species_for_map(map)` with stdlib `difflib`. Returns `None` when unsure: below the cutoff, short names (≤ 6 letters, e.g. Moose/Goose) need ≥ 0.9, and a runner-up within 0.05 counts as ambiguous (Red/Roe Deer). Logging the wrong animal is worse than logging nothing.
 - New `harvest_detector.py`: background thread, every ~0.5 s grab only the configured screen region with `mss`, OCR it with `pytesseract` (needs the free Tesseract installer on Windows), pass text to the matcher.
-- **De-duplication:** the harvest screen stays up for many frames, so only count on the *transition* from "no match" → "match", plus a cooldown (~10 s). Write this as a small class that takes a clock so it's testable.
+- **De-duplication** (`harvest_dedupe.py`, frame-based, no clock): a kill counts only after the same species is read on 2 frames in a row, and the next kill can't count until no species has been read for 4 frames in a row (~2 s). This replaced a 10 s cooldown that dropped real back-to-back kills and double-counted long harvest screens with a one-frame OCR dropout.
 - Region stored in settings as screen percentages so it survives resolution changes; later add a "calibrate" button.
 - Detection hands events to the same queue as Phase 1 — no app changes beyond a second switch.
 
